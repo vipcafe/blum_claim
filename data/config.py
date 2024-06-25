@@ -6,7 +6,7 @@ API_HASH = 'Your api hash'
 ACC_DELAY = [5, 15]
 
 # loại proxy
-PROXY_TYPE = "socks5" # http/socks5
+PROXY_TYPE = "http" # http/socks5
 
 # thư mục chứa các phiên (không thay đổi)
 WORKDIR = "sessions/"
