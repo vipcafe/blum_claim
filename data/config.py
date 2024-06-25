@@ -2,36 +2,37 @@
 API_ID = 11111111
 API_HASH = 'Your api hash'
 
-# задержка между подключениями к аккаунтам
+# độ trễ giữa các lần kết nối đến tài khoản
 ACC_DELAY = [5, 15]
 
-# тип прокси
+# loại proxy
 PROXY_TYPE = "socks5" # http/socks5
 
-# папка с сессиями (не менять)
+# thư mục chứa các phiên (không thay đổi)
 WORKDIR = "sessions/"
 
-# использование прокси
+# sử dụng proxy
 USE_PROXY = True # True/False
 
-# скок поинтов с игры
-POINTS = [100, 140] #[min, max]
+# số điểm từ trò chơi
+POINTS = [195, 250] #[min, max]
 
-# тратить алмазы
+# tiêu thụ kim cương
 SPEND_DIAMONDS = True # True/False
 
-# сон между играми
-SLEEP_GAME_TIME = [100,200] #[min,max]
+# thời gian nghỉ giữa các trò chơi
+SLEEP_GAME_TIME = [20,35] #[min,max]
 
-# мини задержки
-MINI_SLEEP = [3,7] #[min,max]
+# thời gian nghỉ ngắn
+MINI_SLEEP = [3,5] #[min,max]
 
-# доп задержка после 8часов 
-SLEEP_8HOURS = [60*60,120*60] #[min,max] seconds
+# thêm thời gian nghỉ sau 8 giờ
+SLEEP_8HOURS = [60*60,120*60] #[min,max] giây
 
 hello ='''
-███████████████████████████████████████████████████
-█▄─▄████▀▄─██▄─█─▄█─▄▄▄▄█▄─▄████▀▄─██▄─▀█▄─▄█▄─▄▄▀█
-██─██▀██─▀─███▄─▄██▄▄▄▄─██─██▀██─▀─███─█▄▀─███─██─█
-▀▄▄▄▄▄▀▄▄▀▄▄▀▀▄▄▄▀▀▄▄▄▄▄▀▄▄▄▄▄▀▄▄▀▄▄▀▄▄▄▀▀▄▄▀▄▄▄▄▀▀
+████████████████
+███▀▄─██▄─▀█▄─▄█
+▀██─▀─███─█▄▀─██
+▄▀▄▄▀▄▄▀▄▄▄▀▀▄▄▀
+████████████████
 '''
