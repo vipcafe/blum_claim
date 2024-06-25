@@ -10,10 +10,14 @@ Set proxy to proxy.txt (ip:port:login:password session_name)
 <br>5) Open in cmd or terminal in folder BLUM-Drop-game-farming-bot-main</br>
 <br>6) Download Python 3.11</br>
 <br>7) Download requirements</br>
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
 
 <br>8) Start main.py</br>
-```python3 main.py```
+```
+python3 main.py
+```
 
 <br>9) Create session and start farming</br>
 
@@ -31,7 +35,9 @@ Proxy đặt trong proxy.txt (ip:port:tên đăng nhập:mật khẩu tên phiê
 ```pip install -r requirements.txt```
 
 <br>8) Chạy main.py</br>
-```python3 main.py```
+```
+python3 main.py
+```
 
 <br>9) Tạo session và bắt đầu farming</br>
 
