@@ -28,11 +28,14 @@ Kênh Telegram của tôi https://t.me/+Dz4YR5Ho_701MjIy<br></br>
 <br>2) Lấy API_ID và API_HASH từ https://my.telegram.org/auth?to=apps và đặt vào config.py (cần nhập tên độc nhất, thêm từ "bot" vào cuối Short name, ví dụ như blum_bot)</br>
 <br>3) Nếu muốn sử dụng proxy, đặt USE_PROXY = True</br>
 Proxy đặt trong proxy.txt (ip:port:tên đăng nhập:mật khẩu tên phiên)
+
 <br>4) Tạo thư mục "sessions"</br>
 <br>5) Mở dòng lệnh (hoặc terminal) trong thư mục BLUM-Drop-game-farming-bot-main</br>
 <br>6) Cài đặt Python 3.11</br>
 <br>7) Cài đặt các dependency</br>
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
 
 <br>8) Chạy main.py</br>
 ```
