@@ -238,7 +238,7 @@ class Blum:
         else:
             raise Exception("Failed to refresh token")
     
-        async def get_diamonds_balance(self):
+    async def get_diamonds_balance(self):
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
         resp_json = await resp.json()
         return resp_json['playPasses']
