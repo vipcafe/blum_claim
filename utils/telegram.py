@@ -15,15 +15,15 @@ class Accounts:
             if file.endswith(".session"):
                 sessions.append(file.replace(".session", ""))
 
-        logger.info(f"Tìm thấy phiên làm việc: {len(sessions)}!")
+        logger.info(f"Found sessions: {len(sessions)}!")
         return sessions
 
     async def check_valid_sessions(self, sessions: list):
-        logger.info(f"Kiểm tra phiên làm việc hợp lệ!")
+        logger.info(f"Checking valid sessions!")
         valid_sessions = []
         if config.USE_PROXY:
             proxy_dict = {}
-            with open('proxy.txt','r') as file:
+            with open('proxy.txt', 'r') as file:
                 proxy_list = [i.strip().split() for i in file.readlines() if len(i.strip().split()) == 2]
                 for prox, name in proxy_list:
                     proxy_dict[name] = prox
@@ -43,7 +43,7 @@ class Accounts:
                         if await client.connect():
                             valid_sessions.append(session)
                         else:
-                            logger.error(f"{session}.session không hợp lệ")
+                            logger.error(f"{session}.session is not valid")
 
                         await client.disconnect()
                     else:
@@ -52,11 +52,11 @@ class Accounts:
                         if await client.connect():
                             valid_sessions.append(session)
                         else:
-                            logger.error(f"{session}.session không hợp lệ")
+                            logger.error(f"{session}.session is not valid")
                         await client.disconnect()       
                 except:
-                    logger.error(f"{session}.session không hợp lệ")
-            logger.success(f"Phiên làm việc hợp lệ: {len(valid_sessions)}; Không hợp lệ: {len(sessions) - len(valid_sessions)}")
+                    logger.error(f"{session}.session is not valid")
+            logger.success(f"Valid sessions: {len(valid_sessions)}; Invalid sessions: {len(sessions) - len(valid_sessions)}")
                 
         else:
             for session in sessions:
@@ -66,11 +66,11 @@ class Accounts:
                     if await client.connect():
                         valid_sessions.append(session)
                     else:
-                        logger.error(f"{session}.session không hợp lệ")
+                        logger.error(f"{session}.session is not valid")
                     await client.disconnect()
                 except:
-                    logger.error(f"{session}.session không hợp lệ")
-            logger.success(f"Phiên làm việc hợp lệ: {len(valid_sessions)}; Không hợp lệ: {len(sessions) - len(valid_sessions)}")
+                    logger.error(f"{session}.session is not valid")
+            logger.success(f"Valid sessions: {len(valid_sessions)}; Invalid sessions: {len(sessions) - len(valid_sessions)}")
         return valid_sessions
 
     async def get_accounts(self):
@@ -78,6 +78,6 @@ class Accounts:
         accounts = await self.check_valid_sessions(sessions)
 
         if not accounts:
-            raise ValueError("Нет валидных сессий")
+            raise ValueError("No valid sessions found")
         else:
             return accounts

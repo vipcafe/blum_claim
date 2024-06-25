@@ -7,7 +7,7 @@ import os
 
 async def main():
     print(hello)
-    action = int(input('Chọn hành động:\n1. Bắt đầu chạy Claim Blum\n2. Nhập thêm acc\n>'))
+    action = int(input('Select action:\n1. Start running Blum Claim\n2. Enter additional accounts\n>'))
     
     if not os.path.exists('sessions'):
         os.mkdir('sessions')

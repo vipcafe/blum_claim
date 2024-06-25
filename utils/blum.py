@@ -10,7 +10,7 @@ import asyncio
 import random
 
 class Blum:
-    def __init__(self, thread: int, account: str, proxy : str):
+    def __init__(self, thread: int, account: str, proxy: str):
         self.thread = thread
         self.name = account
         if proxy:
@@ -24,13 +24,13 @@ class Blum:
             self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_client)
         else:
             self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR)
-        
+
         if proxy:
             self.proxy = f"{config.PROXY_TYPE}://{proxy.split(':')[2]}:{proxy.split(':')[3]}@{proxy.split(':')[0]}:{proxy.split(':')[1]}"
         else:
             self.proxy = None
         self.auth_token = ""
-        self.ref_token=""
+        self.ref_token = ""
         headers = {'User-Agent': UserAgent(os='android').random}
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False))
 
@@ -40,12 +40,12 @@ class Blum:
         if login == False:
             await self.session.close()
             return 0
-        logger.info(f"main | Luồng {self.thread} | {self.name} | Bắt đầu! | PROXY : {self.proxy}")
+        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | PROXY: {self.proxy}")
         while True:
             try:
                 valid = await self.is_token_valid()
                 if not valid:
-                    logger.warning(f"main | Luồng {self.thread} | {self.name} | Token không hợp lệ. Làm mới token...")
+                    logger.warning(f"main | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
                     await self.refresh()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 
@@ -65,30 +65,30 @@ class Blum:
                 
                 if config.SPEND_DIAMONDS:
                     diamonds_balance = await self.get_diamonds_balance()
-                    logger.info(f"main | Luồng {self.thread} | {self.name} | Có {diamonds_balance} kim cương!")
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Have {diamonds_balance} diamonds!")
                     for _ in range(diamonds_balance):
                         await self.game()
                         await asyncio.sleep(random.randint(*config.SLEEP_GAME_TIME))
                         
                 if start_time is None and end_time is None:
                     await self.start()
-                    logger.info(f"main | Luồng {self.thread} | {self.name} | Bắt đầu khai thác!")
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Start mining!")
                 elif start_time is not None and end_time is not None and timestamp >= end_time:
                     timestamp, balance = await self.claim()
-                    logger.success(f"main | Luồng {self.thread} | {self.name} | Nhận thưởng! Số dư: {balance}")
+                    logger.success(f"main | Thread {self.thread} | {self.name} | Claim reward! Balance: {balance}")
                 
                 else:
                     add_sleep = random.randint(*config.SLEEP_8HOURS)
-                    logger.info(f"main | Luồng {self.thread} | {self.name} | Ngủ {(end_time-timestamp+add_sleep)} giây!")
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
                     await asyncio.sleep(end_time-timestamp+add_sleep)
                     await self.login()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
             except Exception as err:
-                logger.error(f"main | Luồng {self.thread} | {self.name} | {err}")
+                logger.error(f"main | Thread {self.thread} | {self.name} | {err}")
                 if err != "Server disconnected":
                     valid = await self.is_token_valid()
                     if not valid:
-                        logger.warning(f"main | Luồng {self.thread} | {self.name} | Token không hợp lệ. Làm mới token...")
+                        logger.warning(f"main | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
                         await self.refresh()
                     await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 else:
@@ -133,7 +133,7 @@ class Blum:
             self.session.headers['Authorization'] = "Bearer " + resp.get("token").get("access")
             return True
         except Exception as err:
-            logger.error(f"login | Luồng {self.thread} | {self.name} | {err}")
+            logger.error(f"login | Thread {self.thread} | {self.name} | {err}")
             if err == "Server disconnected":
                 return True
             return False
@@ -151,29 +151,29 @@ class Blum:
 
             auth_url = web_view.url
         except Exception as err:
-            logger.error(f"main | Luồng {self.thread} | {self.name} | {err}")
+            logger.error(f"main | Thread {self.thread} | {self.name} | {err}")
             if 'USER_DEACTIVATED_BAN' in str(err):
-                logger.error(f"login | Luồng {self.thread} | {self.name} | NGƯỜI DÙNG BỊ CẤM")
+                logger.error(f"login | Thread {self.thread} | {self.name} | USER BANNED")
                 await self.client.disconnect()
                 return False
         await self.client.disconnect()
         return unquote(string=unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0]))
-    
+
     async def get_referral_info(self):
         try:
             resp = await self.session.get("https://gateway.blum.codes/v1/friends/balance", proxy=self.proxy)
             resp_json = await resp.json()
             if resp_json['canClaim'] == True:
                 claimed = await self.claim_referral()
-                logger.success(f"get_ref | Luồng {self.thread} | {self.name} | Nhận phần thưởng giới thiệu! Đã nhận: {claimed}")
+                logger.success(f"get_ref | Thread {self.thread} | {self.name} | Referral rewards claimed! Claimed: {claimed}")
         except:
             pass
-    
+
     async def claim_referral(self):
         resp = await self.session.post("https://gateway.blum.codes/v1/friends/claim", proxy=self.proxy)
         resp_json = await resp.json()
         return resp_json['claimBalance']
-    
+
     async def do_tasks(self):
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
         resp_json = await resp.json()
@@ -183,12 +183,12 @@ class Blum:
                     for subtask in task['subTasks']:
                         if subtask['status'] == "NOT_STARTED":
                             await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
-                            logger.info(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | CỐ GẮNG THỰC HIỆN nhiệm vụ {subtask['title']}!")
+                            logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
                             await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                         elif subtask['status'] == "READY_FOR_CLAIM":
                             answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
                             answer = await answer.json()
-                            logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | HOÀN THÀNH nhiệm vụ {subtask['title']}!")
+                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']}!")
                             await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 else:  
                     if task['status'] == "NOT_STARTED":
@@ -197,11 +197,11 @@ class Blum:
                     elif task['status'] == "READY_FOR_CLAIM":
                         answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
                         answer = await answer.json()
-                        logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhận phần thưởng NHIỆM VỤ! Đã nhận: {answer['reward']}")
+                        logger.success(f"tasks | Thread {self.thread} | {self.name} | TASK REWARD RECEIVED! Claimed: {answer['reward']}")
                         await asyncio.sleep(random.randint(*config.MINI_SLEEP))
         except Exception as err:
-            logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
-    
+            logger.error(f"tasks | Thread {self.thread} | {self.name} | {err}")
+
     async def is_token_valid(self):
         response = await self.session.get("https://gateway.blum.codes/v1/user/me", proxy=self.proxy)
         
@@ -212,7 +212,7 @@ class Blum:
             return error_info.get("code") != 16
         else:
             return False
-    
+
     async def refresh(self):
         refresh_payload = {
             'refresh': self.ref_token
@@ -232,22 +232,22 @@ class Blum:
                 self.auth_token = new_access_token  
                 self.ref_token = new_refresh_token  
                 self.session.headers['Authorization'] = "Bearer " + self.auth_token
-                logger.info(f"refresh | Luồng {self.thread} | {self.name} | Làm mới token thành công.")
+                logger.info(f"refresh | Thread {self.thread} | {self.name} | Token refreshed successfully.")
             else:
-                raise Exception("Không tìm thấy token truy cập mới trong phản hồi")
+                raise Exception("New access token not found in response")
         else:
-            raise Exception("Không thể làm mới token")
+            raise Exception("Failed to refresh token")
     
-    async def get_diamonds_balance(self):
+        async def get_diamonds_balance(self):
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
         resp_json = await resp.json()
         return resp_json['playPasses']
-    
+
     async def game(self):
         response = await self.session.post('https://game-domain.blum.codes/api/v1/game/play', proxy=self.proxy)
-        logger.info(f"game | Luồng {self.thread} | {self.name} | Bắt đầu trò chơi thả rơi!")
+        logger.info(f"game | Thread {self.thread} | {self.name} | Start drop game!")
         if 'message' in await response.json():
-            logger.error(f"game | Luồng {self.thread} | {self.name} | KHÔNG THỂ BẮT ĐẦU TRÒ CHƠI THẢ RƠI")
+            logger.error(f"game | Thread {self.thread} | {self.name} | CAN'T START THE DROP GAME")
             return
         text = (await response.json())['gameId']
         await asyncio.sleep(30)
@@ -261,15 +261,15 @@ class Blum:
         response = await self.session.post('https://game-domain.blum.codes/api/v1/game/claim', json=json_data, proxy=self.proxy)
         
         if await response.text() == "OK":
-            logger.success(f"game | Luồng {self.thread} | {self.name} | Nhận phần thưởng TRÒ CHƠI THẢ RƠI | Đã nhận: {count}")
+            logger.success(f"game | Thread {self.thread} | {self.name} | Received DROP GAME REWARD | Received: {count}")
         elif "Invalid jwt token" in await response.text():
             valid = await self.is_token_valid()
             if not valid:
-                logger.warning(f"game | Luồng {self.thread} | {self.name} | Token không hợp lệ. Làm mới token...")
+                logger.warning(f"game | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
                 await self.refresh()
         else:
-            logger.error(f"game | Luồng {self.thread} | {self.name} | {await response.text()}")
-    
+            logger.error(f"game | Thread {self.thread} | {self.name} | {await response.text()}")
+
     async def claim_diamond(self):
         resp = await self.session.post("https://game-domain.blum.codes/api/v1/daily-reward?offset=-180", proxy=self.proxy)
         txt = await resp.text()
