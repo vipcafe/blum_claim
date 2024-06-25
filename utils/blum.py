@@ -5,46 +5,34 @@ from fake_useragent import UserAgent
 from pyrogram import Client
 from data import config
 
-import requests
 import aiohttp
 import asyncio
 import random
 
 class Blum:
-    def __init__(self, thread: int, account: str, proxy: str = None):
+    def __init__(self, thread: int, account: str, proxy: str):
         self.thread = thread
         self.name = account
-        # Cấu hình Pyrogram Client nếu bạn vẫn cần sử dụng nó
         if proxy:
-            proxy_parts = proxy.split(':')
-            proxy_credentials = {
-                "scheme": config.PROXY_TYPE,  # Ví dụ: "socks5"
-                "hostname": proxy_parts[0],
-                "port": int(proxy_parts[1]),
-                "username": proxy_parts[2],
-                "password": proxy_parts[3],
+            proxy_client = {
+                "scheme": config.PROXY_TYPE,
+                "hostname": proxy.split(':')[0],
+                "port": int(proxy.split(':')[1]),
+                "username": proxy.split(':')[2],
+                "password": proxy.split(':')[3],
             }
-            self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_credentials)
+            self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_client)
         else:
             self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR)
 
-        # Cấu hình proxy cho requests.Session
-        self.session = requests.Session()
-        if proxy:  # Sử dụng cú pháp proxy tương tự để requests.Session
-            self.session.proxies.update({
-                'http': f"socks5://{proxy_parts[2]}:{proxy_parts[3]}@{proxy_parts[0]}:{proxy_parts[1]}",
-                'https': f"socks5://{proxy_parts[2]}:{proxy_parts[3]}@{proxy_parts[0]}:{proxy_parts[1]}"
-            })
-
-        # User-Agent
-        self.session.headers.update({'User-Agent': UserAgent(os='android').random})
-
-        # Bỏ qua xác thực SSL nếu cần (tương tự aiohttp's verify_ssl=False)
-        self.session.verify = False  # Cẩn thận khi sử dụng vì lý do bảo mật
-        
-        # Nếu muốn thiết lập proxy cho toàn bộ session
-        if self.proxy:
-            self.session.proxies.update(self.proxy)
+        if proxy:
+            self.proxy = f"{config.PROXY_TYPE}://{proxy.split(':')[2]}:{proxy.split(':')[3]}@{proxy.split(':')[0]}:{proxy.split(':')[1]}"
+        else:
+            self.proxy = None
+        self.auth_token = ""
+        self.ref_token = ""
+        headers = {'User-Agent': UserAgent(os='android').random}
+        self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False))
 
     async def main(self):
         await asyncio.sleep(random.randint(*config.ACC_DELAY))
@@ -139,10 +127,10 @@ class Blum:
             if tg_web_data == False:
                 return False
             json_data = {"query": await self.get_tg_web_data()}
-            resp = await self.session.post("https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP", json=json_data, proxy=self.proxy, timeout=200)
+            resp = await self.session.post("https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP", json=json_data, proxy=self.proxy, timeout= 200)
             resp = await resp.json()
-            self.ref_token = await resp.get("token").get("refresh")
-            self.session.headers['Authorization'] = await "Bearer " + resp.get("token").get("access")
+            self.ref_token = resp.get("token").get("refresh")
+            self.session.headers['Authorization'] = "Bearer " + resp.get("token").get("access")
             return True
         except Exception as err:
             logger.error(f"login | Thread {self.thread} | {self.name} | {err}")
