@@ -4,13 +4,18 @@ from utils.core import logger
 from fake_useragent import UserAgent
 from pyrogram import Client
 from data import config
+from pyrogram import Client
+from pyrogram.raw.functions.messages import RequestAppWebView
+from pyrogram.raw import types
+import ipdb  # Ex: ipdb.set_trace()
+
 
 import aiohttp
 import asyncio
 import random
 
 class Blum:
-    def __init__(self, thread: int, account: str, proxy: str):
+    def __init__(self, thread: int, account: str, proxy : str):
         self.thread = thread
         self.name = account
         if proxy:
@@ -24,14 +29,25 @@ class Blum:
             self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_client)
         else:
             self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR)
-
+        
         if proxy:
             self.proxy = f"{config.PROXY_TYPE}://{proxy.split(':')[2]}:{proxy.split(':')[3]}@{proxy.split(':')[0]}:{proxy.split(':')[1]}"
         else:
             self.proxy = None
         self.auth_token = ""
-        self.ref_token = ""
-        headers = {'User-Agent': UserAgent(os='android').random}
+        self.ref_token=""
+        headers = {
+            'accept': 'application/json, text/plain, */*',
+            'cache-control': 'no-cache',
+            'content-type': 'application/json',
+            'origin': 'https://telegram.blum.codes',
+            'pragma': 'no-cache',
+            'priority': 'u=1, i',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': UserAgent(os='android').random}
+
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False))
 
     async def main(self):
@@ -40,7 +56,8 @@ class Blum:
         if login == False:
             await self.session.close()
             return 0
-        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | PROXY: {self.proxy}")
+        binnace = await self.get_binnace()
+        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | binnace : {binnace} | PROXY: {self.proxy}")
         while True:
             try:
                 valid = await self.is_token_valid()
@@ -79,7 +96,8 @@ class Blum:
                 
                 else:
                     add_sleep = random.randint(*config.SLEEP_8HOURS)
-                    logger.info(f"main | Thread {self.thread} | {self.name} | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
+                    binnace = await self.get_binnace()
+                    logger.info(f"main | Thread {self.thread} | {self.name} | binnace : {binnace}  | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
                     await asyncio.sleep(end_time-timestamp+add_sleep)
                     await self.login()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
@@ -123,11 +141,13 @@ class Blum:
 
     async def login(self):
         try:
+            await self.session.options(url='https://user-domain.blum.codes/api/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP')
             tg_web_data = await self.get_tg_web_data()
             if tg_web_data == False:
                 return False
             json_data = {"query": await self.get_tg_web_data()}
-            resp = await self.session.post("https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP", json=json_data, proxy=self.proxy, timeout= 200)
+            resp = await self.session.post("https://user-domain.blum.codes/api/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP", json=json_data, proxy=self.proxy)
+
             resp = await resp.json()
             self.ref_token = resp.get("token").get("refresh")
             self.session.headers['Authorization'] = "Bearer " + resp.get("token").get("access")
@@ -141,12 +161,13 @@ class Blum:
     async def get_tg_web_data(self):
         await self.client.connect()
         try:
-            web_view = await self.client.invoke(RequestWebView(
-                peer=await self.client.resolve_peer('BlumCryptoBot'),
-                bot=await self.client.resolve_peer('BlumCryptoBot'),
+            peer = await self.client.resolve_peer('BlumCryptoBot')
+            InputBotApp = types.InputBotAppShortName(bot_id=peer, short_name="app")
+            web_view = await self.client.invoke(RequestAppWebView(
+                peer=peer,
+                app=InputBotApp,
                 platform='android',
-                from_bot_menu=False,
-                url='https://telegram.blum.codes/'
+                write_allowed=True
             ))
 
             auth_url = web_view.url
@@ -157,30 +178,34 @@ class Blum:
                 await self.client.disconnect()
                 return False
         await self.client.disconnect()
-        return unquote(string=unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0]))
-
+        init_data = unquote(string=auth_url.split('tgWebAppData=', maxsplit=1)[1].split('&tgWebAppVersion', maxsplit=1)[0])
+        return init_data
+    
     async def get_referral_info(self):
         try:
-            resp = await self.session.get("https://gateway.blum.codes/v1/friends/balance", proxy=self.proxy)
+            resp = await self.session.get("https://user-domain.blum.codes/api/v1/friends/balance", proxy=self.proxy)
             resp_json = await resp.json()
             if resp_json['canClaim'] == True:
                 claimed = await self.claim_referral()
                 logger.success(f"get_ref | Thread {self.thread} | {self.name} | Referral rewards claimed! Claimed: {claimed}")
         except:
             pass
-
+    
     async def claim_referral(self):
-        resp = await self.session.post("https://gateway.blum.codes/v1/friends/claim", proxy=self.proxy)
+        resp = await self.session.post("https://user-domain.blum.codes/api/v1/friends/claim", proxy=self.proxy)
         resp_json = await resp.json()
         return resp_json['claimBalance']
 
     async def do_tasks(self):
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
         resp_json = await resp.json()
+        continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
             for task in resp_json:
-                if "subTasks" in task:
-                    for subtask in task['subTasks']:
+                if "tasks" in task:
+                    for subtask in task['tasks']:
+                        if subtask['title'] in continue_check:
+                            continue
                         if subtask['status'] == "NOT_STARTED":
                             await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
                             logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
@@ -188,7 +213,7 @@ class Blum:
                         elif subtask['status'] == "READY_FOR_CLAIM":
                             answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
                             answer = await answer.json()
-                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']}!")
+                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: {answer['reward']}")
                             await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 else:  
                     if task['status'] == "NOT_STARTED":
@@ -200,10 +225,32 @@ class Blum:
                         logger.success(f"tasks | Thread {self.thread} | {self.name} | TASK REWARD RECEIVED! Claimed: {answer['reward']}")
                         await asyncio.sleep(random.randint(*config.MINI_SLEEP))
         except Exception as err:
-            logger.error(f"tasks | Thread {self.thread} | {self.name} | {err}")
+            logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
+
+        resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
+        resp_json = await resp.json()
+        continue_check = ["Join or create tribe", "Invite", "Farm"]
+        try:
+            for task in resp_json:
+                if "tasks" in task:
+                    for subtask in task['tasks']:
+                        if subtask['title'] in continue_check:
+                            continue
+
+                        if subtask['status'] == "READY_FOR_CLAIM":
+                            answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                            answer = await answer.json()
+                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
+                else:  
+                    if task['status'] == "READY_FOR_CLAIM":
+                        answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
+                        answer = await answer.json()
+                        logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
+        except Exception as err:
+            logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
 
     async def is_token_valid(self):
-        response = await self.session.get("https://gateway.blum.codes/v1/user/me", proxy=self.proxy)
+        response = await self.session.get("https://user-domain.blum.codes/api/v1/user/me", proxy=self.proxy)
         
         if response.status == 200:
             return True
@@ -212,7 +259,12 @@ class Blum:
             return error_info.get("code") != 16
         else:
             return False
-
+    async def get_binnace(self):
+        resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
+        resp_json = await resp.json()
+        binnace = resp_json.get("availableBalance")
+        return binnace
+    
     async def refresh(self):
         refresh_payload = {
             'refresh': self.ref_token
@@ -221,7 +273,7 @@ class Blum:
         if "authorization" in self.session.headers:
             del self.session.headers['authorization']
             
-        response = await self.session.post("https://gateway.blum.codes/v1/auth/refresh", json=refresh_payload, proxy=self.proxy)
+        response = await self.session.post("https://user-domain.blum.codes/api/v1/auth/refresh", json=refresh_payload, proxy=self.proxy)
         
         if response.status == 200:
             data = await response.json()  
@@ -242,7 +294,7 @@ class Blum:
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
         resp_json = await resp.json()
         return resp_json['playPasses']
-
+    
     async def game(self):
         response = await self.session.post('https://game-domain.blum.codes/api/v1/game/play', proxy=self.proxy)
         logger.info(f"game | Thread {self.thread} | {self.name} | Start drop game!")
