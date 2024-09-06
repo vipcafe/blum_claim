@@ -201,20 +201,21 @@ class Blum:
         resp_json = await resp.json()
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
-            for task in resp_json:
-                if "tasks" in task:
-                    for subtask in task['tasks']:
-                        if subtask['title'] in continue_check:
-                            continue
-                        if subtask['status'] == "NOT_STARTED":
-                            await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
-                            logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
-                            await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                        elif subtask['status'] == "READY_FOR_CLAIM":
-                            answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
-                            answer = await answer.json()
-                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: {answer['reward']}")
-                            await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+            for catagory in resp_json:
+                if "subSections" in catagory:
+                    for task in catagory['subSections']:
+                        for subtask in task['tasks']:
+                            if subtask['title'] in continue_check:
+                                continue
+                            if subtask['status'] == "NOT_STARTED":
+                                await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
+                                logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
+                                await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                            elif subtask['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: {answer['reward']}")
+                                await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 else:  
                     if task['status'] == "NOT_STARTED":
                         await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/start", proxy=self.proxy)
@@ -231,16 +232,17 @@ class Blum:
         resp_json = await resp.json()
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
-            for task in resp_json:
-                if "tasks" in task:
-                    for subtask in task['tasks']:
-                        if subtask['title'] in continue_check:
-                            continue
+            for catagory in resp_json:
+                if "subSections" in catagory:
+                    for task in catagory['subSections']:
+                        for subtask in task['tasks']:
+                            if subtask['title'] in continue_check:
+                                continue
 
-                        if subtask['status'] == "READY_FOR_CLAIM":
-                            answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
-                            answer = await answer.json()
-                            logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
+                            if subtask['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
                 else:  
                     if task['status'] == "READY_FOR_CLAIM":
                         answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
