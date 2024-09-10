@@ -7,6 +7,7 @@ from data import config
 from pyrogram import Client
 from pyrogram.raw.functions.messages import RequestAppWebView
 from pyrogram.raw import types
+import traceback
 import ipdb  # Ex: ipdb.set_trace()
 
 
@@ -202,51 +203,62 @@ class Blum:
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
             for catagory in resp_json:
-                if "subSections" in catagory:
+                if 'subSections' in catagory:
                     for task in catagory['subSections']:
-                        for subtask in task['tasks']:
-                            if subtask['title'] in continue_check:
-                                continue
-                            if subtask['status'] == "NOT_STARTED":
-                                await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
-                                logger.info(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | CỐ GẮNG THỰC HIỆN nhiệm vụ {subtask['title']}!")
-                                await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                            elif subtask['status'] == "READY_FOR_CLAIM":
-                                answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
-                                answer = await answer.json()
-                                logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | HOÀN THÀNH nhiệm vụ {subtask['title']}! | Đã nhận: {answer['reward']} ")
-                                await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                else:  
-                    if task['status'] == "NOT_STARTED":
-                        await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/start", proxy=self.proxy)
-                        await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                    elif task['status'] == "READY_FOR_CLAIM":
-                        answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
-                        answer = await answer.json()
-                        logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhận phần thưởng NHIỆM VỤ! Đã nhận: {answer['reward']}")
-                        await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                        if 'tasks' in task:
+                            for subtask in task['tasks']:
+                                if 'title' not in subtask or 'status' not in subtask:
+                                    continue
+                                if subtask['title'] in continue_check:
+                                    continue
+                                if subtask['status'] == "NOT_STARTED":
+                                    await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
+                                    logger.info(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | CỐ GẮNG THỰC HIỆN nhiệm vụ {subtask['title']}!")
+                                    await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                                elif subtask['status'] == "READY_FOR_CLAIM":
+                                    answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                    answer = await answer.json()
+                                    logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ mùa hè | HOÀN THÀNH nhiệm vụ {subtask['title']}! | Đã nhận: {answer['reward']} ")
+                                    await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                                else:
+                                    continue
+                # else:  
+                    # if catagory['status'] == "NOT_STARTED":
+                    #     await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{catagory['id']}/start", proxy=self.proxy)
+                    #     await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                    # elif catagory['status'] == "READY_FOR_CLAIM":
+                    #     answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{catagory['id']}/claim", proxy=self.proxy)
+                    #     answer = await answer.json()
+                    #     logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhận phần thưởng NHIỆM VỤ! Đã nhận: {answer['reward']}")
+                    #     await asyncio.sleep(random.randint(*config.MINI_SLEEP))
         except Exception as err:
             logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
+            logger.error(traceback.format_exc())
 
         resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
         resp_json = await resp.json()
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
             for catagory in resp_json:
-                if "subSections" in catagory:
+                if 'subSections' in catagory:
                     for task in catagory['subSections']:
-                        for subtask in task['tasks']:
-                            if subtask['title'] in continue_check:
-                                continue
-                            if subtask['status'] == "READY_FOR_CLAIM":
-                                answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
-                                answer = await answer.json()
-                                logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ BLUMP| HOÀN THÀNH nhiệm vụ {subtask['title']}! | Đã nhận: +{answer['reward']}")
-                else:  
-                    if task['status'] == "READY_FOR_CLAIM":
-                        answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
-                        answer = await answer.json()
-                        logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhận phần thưởng NHIỆM VỤ {subtask['title']}! | Đã nhận: +{answer['reward']}")
+                        if 'tasks' in task:
+                            for subtask in task['tasks']:
+                                if 'title' not in subtask:
+                                    continue
+                                if subtask['title'] in continue_check:
+                                    continue
+                                if subtask['status'] == "READY_FOR_CLAIM":
+                                    answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                    answer = await answer.json()
+                                    logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhiệm vụ BLUMP| HOÀN THÀNH nhiệm vụ {subtask['title']}! | Đã nhận: +{answer['reward']}")
+                                else: 
+                                    continue
+                # else:  
+                #     if catagory['status'] == "READY_FOR_CLAIM":
+                #         answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{catagory['id']}/claim", proxy=self.proxy)
+                #         answer = await answer.json()
+                #         logger.success(f"tasks | Luồng {self.thread} | {self.name} | Nhận phần thưởng NHIỆM VỤ {subtask['title']}! | Đã nhận: +{answer['reward']}")
         except Exception as err:
             logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
 
@@ -310,7 +322,6 @@ class Blum:
             'gameId': text,
             'points': count,
         }
-
         response = await self.session.post('https://game-domain.blum.codes/api/v1/game/claim', json=json_data, proxy=self.proxy)
         
         if await response.text() == "OK":
