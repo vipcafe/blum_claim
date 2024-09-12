@@ -56,16 +56,17 @@ class Blum:
         if login == False:
             await self.session.close()
             return 0
-        binnace = await self.get_binnace()
-        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | binnace : {binnace} | PROXY: {self.proxy}")
+        # binnace = await self.get_binnace()
+        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | PROXY: {self.proxy}")
         while True:
             try:
                 valid = await self.is_token_valid()
                 if not valid:
                     logger.warning(f"main | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
                     await self.refresh()
+                else:
+                    logger.info(f"main | Thread {self.thread} | {self.name} | get token success !")
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                
                 await self.claim_diamond()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 
@@ -73,19 +74,33 @@ class Blum:
                     timestamp, start_time, end_time = await self.balance()
                 except:
                     continue
-                
                 await self.get_referral_info()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                
+                logger.info(f"main | Thread {self.thread} | {self.name} | Check Task .... !")
                 await self.do_tasks()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                
                 if config.SPEND_DIAMONDS:
-                    diamonds_balance = await self.get_diamonds_balance()
+                    diamonds_balance :int = await self.get_diamonds_balance()
                     logger.info(f"main | Thread {self.thread} | {self.name} | Have {diamonds_balance} diamonds!")
+                    max_errors = 5
+                    consecutive_errors = 0
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Start Game .... !")
                     for _ in range(diamonds_balance):
-                        await self.game()
+                        success = await self.game()
+                        if not success:
+                            consecutive_errors += 1
+                            logger.warning(f"game | Thread {self.thread} | {self.name} | Error occurred, retrying... ({consecutive_errors}/{max_errors})")
+                            if consecutive_errors >= max_errors:
+                                logger.warning(f"perform_actions | Thread {self.thread} | {self.name} | Exceeded maximum consecutive error count, stopping.")
+                                break
+                            await asyncio.sleep(5)  # Thay đổi thời gian chờ nếu cần
+                        else:
+                            consecutive_errors = 0  # Reset số lỗi liên tiếp khi thành công
+                        
                         await asyncio.sleep(random.randint(*config.SLEEP_GAME_TIME))
+                    # for _ in range(diamonds_balance):
+                    #     await self.game()
+                    #     await asyncio.sleep(random.randint(*config.SLEEP_GAME_TIME))
                         
                 if start_time is None and end_time is None:
                     await self.start()
@@ -96,8 +111,7 @@ class Blum:
                 
                 else:
                     add_sleep = random.randint(*config.SLEEP_8HOURS)
-                    binnace = await self.get_binnace()
-                    logger.info(f"main | Thread {self.thread} | {self.name} | binnace : {binnace}  | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
                     await asyncio.sleep(end_time-timestamp+add_sleep)
                     await self.login()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
@@ -113,31 +127,41 @@ class Blum:
                     await asyncio.sleep(5 * random.randint(*config.MINI_SLEEP))
 
     async def claim(self):
-        try:
-            resp = await self.session.post("https://game-domain.blum.codes/api/v1/farming/claim", proxy=self.proxy)
-            resp_json = await resp.json()
-            return int(resp_json.get("timestamp") / 1000), resp_json.get("availableBalance")
-        except:
-            pass
+        while True:
+            try:
+                resp = await self.session.post("https://game-domain.blum.codes/api/v1/farming/claim", proxy=self.proxy)
+                if resp.status == 200:
+                    resp_json = await resp.json()
+                    return int(resp_json.get("timestamp") / 1000), resp_json.get("availableBalance")
+            except:
+                pass
+            await asyncio.sleep(5)
 
     async def start(self):
-        try:
-            resp = await self.session.post("https://game-domain.blum.codes/api/v1/farming/start", proxy=self.proxy)
-        except:
-            pass
+        while True:
+            try:
+                resp = await self.session.post("https://game-domain.blum.codes/api/v1/farming/start", proxy=self.proxy)
+                if resp.status == 200:
+                    return True
+                await asyncio.sleep(5)
+            except:
+                pass
         
     async def balance(self):
-        try:
-            resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
-            resp_json = await resp.json()
-            timestamp = resp_json.get("timestamp")
-            if resp_json.get("farming"):
-                start_time = resp_json.get("farming").get("startTime")
-                end_time = resp_json.get("farming").get("endTime")
-                return int(timestamp / 1000), int(start_time / 1000), int(end_time / 1000)
-            return int(timestamp), None, None
-        except:
-            pass
+        while True:
+            try:
+                resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
+                resp_json = await resp.json()
+                timestamp = resp_json.get("timestamp")
+                if timestamp is not None:
+                    if resp_json.get("farming"):
+                        start_time = resp_json.get("farming").get("startTime")
+                        end_time = resp_json.get("farming").get("endTime")
+                        return int(timestamp / 1000), int(start_time / 1000), int(end_time / 1000)
+                    return int(timestamp), None, None
+                await asyncio.sleep(5)
+            except:
+                pass
 
     async def login(self):
         try:
@@ -182,12 +206,16 @@ class Blum:
         return init_data
     
     async def get_referral_info(self):
+       while True: 
         try:
             resp = await self.session.get("https://user-domain.blum.codes/api/v1/friends/balance", proxy=self.proxy)
-            resp_json = await resp.json()
-            if resp_json['canClaim'] == True:
-                claimed = await self.claim_referral()
-                logger.success(f"get_ref | Thread {self.thread} | {self.name} | Referral rewards claimed! Claimed: {claimed}")
+            if resp.status == 200:
+                resp_json = await resp.json()
+                if resp_json['canClaim'] == True:
+                    claimed = await self.claim_referral()
+                    logger.success(f"get_ref | Thread {self.thread} | {self.name} | Referral rewards claimed! Claimed: {claimed}")
+                return True
+            await asyncio.sleep(5)
         except:
             pass
     
@@ -262,11 +290,24 @@ class Blum:
             return error_info.get("code") != 16
         else:
             return False
+    
     async def get_binnace(self):
-        resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
-        resp_json = await resp.json()
-        binnace = resp_json.get("availableBalance")
-        return binnace
+        while True:
+            try:
+                resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
+                resp_json = await resp.json()
+                binnace = resp_json.get("availableBalance")
+                
+                # Kiểm tra nếu binnace hợp lệ
+                if binnace is not None:
+                    return binnace
+            except aiohttp.ClientError as e:
+                pass
+            except Exception as e:
+                pass
+
+            # Đợi một thời gian trước khi thử lại
+            await asyncio.sleep(5)  
     
     async def refresh(self):
         refresh_payload = {
@@ -294,36 +335,44 @@ class Blum:
             raise Exception("Failed to refresh token")
     
     async def get_diamonds_balance(self):
-        resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
-        resp_json = await resp.json()
-        return resp_json['playPasses']
+        while True:
+            resp = await self.session.get("https://game-domain.blum.codes/api/v1/user/balance", proxy=self.proxy)
+            resp_json = await resp.json()
+            if resp_json['playPasses'] is not None: 
+                return resp_json['playPasses']
+            await asyncio.sleep(7)
     
     async def game(self):
-        response = await self.session.post('https://game-domain.blum.codes/api/v1/game/play', proxy=self.proxy)
-        logger.info(f"game | Thread {self.thread} | {self.name} | Start drop game!")
-        if 'message' in await response.json():
-            logger.error(f"game | Thread {self.thread} | {self.name} | CAN'T START THE DROP GAME")
-            return
-        text = (await response.json())['gameId']
-        await asyncio.sleep(30)
-        count = random.randint(*config.POINTS)
-        
-        json_data = {
-            'gameId': text,
-            'points': count,
-        }
+        try:
+            response = await self.session.post('https://game-domain.blum.codes/api/v1/game/play', proxy=self.proxy)
+            logger.info(f"game | Thread {self.thread} | {self.name} | Start drop game!")
+            if 'message' in await response.json():
+                logger.error(f"game | Thread {self.thread} | {self.name} | CAN'T START THE DROP GAME")
+                return
+            text = (await response.json())['gameId']
+            await asyncio.sleep(30)
+            count = random.randint(*config.POINTS)
+            
+            json_data = {
+                'gameId': text,
+                'points': count,
+            }
 
-        response = await self.session.post('https://game-domain.blum.codes/api/v1/game/claim', json=json_data, proxy=self.proxy)
-        
-        if await response.text() == "OK":
-            logger.success(f"game | Thread {self.thread} | {self.name} | Received DROP GAME REWARD | Received: {count}")
-        elif "Invalid jwt token" in await response.text():
-            valid = await self.is_token_valid()
-            if not valid:
-                logger.warning(f"game | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
-                await self.refresh()
-        else:
-            logger.error(f"game | Thread {self.thread} | {self.name} | {await response.text()}")
+            response = await self.session.post('https://game-domain.blum.codes/api/v1/game/claim', json=json_data, proxy=self.proxy)
+            
+            if await response.text() == "OK":
+                logger.success(f"game | Thread {self.thread} | {self.name} | Received DROP GAME REWARD | Received: {count}")
+            elif "Invalid jwt token" in await response.text():
+                valid = await self.is_token_valid()
+                if not valid:
+                    logger.warning(f"game | Thread {self.thread} | {self.name} | Token invalid. Refresh token...")
+                    await self.refresh()
+            else:
+                logger.error(f"game | Thread {self.thread} | {self.name} | {await response.text()}")
+        except Exception as e:
+            logger.error(f"game | Thread {self.thread} | {self.name} | Exception occurred: {e}")
+            return False
+
 
     async def claim_diamond(self):
         resp = await self.session.post("https://game-domain.blum.codes/api/v1/daily-reward?offset=-180", proxy=self.proxy)
