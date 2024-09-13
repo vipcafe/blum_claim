@@ -11,6 +11,8 @@ PROXY_TYPE = "http" # http/socks5
 # thư mục chứa các phiên (không thay đổi)
 WORKDIR = "sessions/"
 
+CLAIM_TASK = False
+
 # sử dụng proxy
 USE_PROXY = True # True/False
 

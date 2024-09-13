@@ -76,15 +76,17 @@ class Blum:
                     continue
                 await self.get_referral_info()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
-                logger.info(f"main | Thread {self.thread} | {self.name} | Check Task .... !")
-                await self.do_tasks()
+                if config.CLAIM_TASK:
+                    logger.info(f"main | Thread {self.thread} | {self.name} | Check Task .... !")
+                    await self.do_tasks()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 if config.SPEND_DIAMONDS:
                     diamonds_balance :int = await self.get_diamonds_balance()
                     logger.info(f"main | Thread {self.thread} | {self.name} | Have {diamonds_balance} diamonds!")
                     max_errors = 5
                     consecutive_errors = 0
-                    logger.info(f"main | Thread {self.thread} | {self.name} | Start Game .... !")
+                    if diamonds_balance > 0:
+                        logger.info(f"main | Thread {self.thread} | {self.name} | Start Game .... !")
                     for _ in range(diamonds_balance):
                         success = await self.game()
                         if not success:
