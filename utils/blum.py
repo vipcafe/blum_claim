@@ -56,8 +56,8 @@ class Blum:
         if login == False:
             await self.session.close()
             return 0
-        # binnace = await self.get_binnace()
-        logger.info(f"main | Thread {self.thread} | {self.name} | Started! | PROXY: {self.proxy}")
+        binnace = await self.get_binnace()
+        logger.info(f"main | Thread {self.thread} | {self.name} | Started! |\033[92m binace: {binnace} \033[0m| PROXY: {self.proxy}")
         while True:
             try:
                 valid = await self.is_token_valid()
@@ -66,7 +66,7 @@ class Blum:
                     await self.refresh()
                 else:
                     logger.info(f"main | Thread {self.thread} | {self.name} | get token success !")
-                await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+
                 await self.claim_diamond()
                 await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                 
@@ -112,6 +112,8 @@ class Blum:
                     logger.success(f"main | Thread {self.thread} | {self.name} | Claim reward! Balance: {balance}")
                 
                 else:
+                    binnace = await self.get_binnace()
+                    logger.info(f"main | Thread {self.thread} | {self.name} | \033[92m binace: {binnace} \033[0m ")
                     add_sleep = random.randint(*config.SLEEP_8HOURS)
                     logger.info(f"main | Thread {self.thread} | {self.name} | Sleep for {(end_time-timestamp+add_sleep)} seconds!")
                     await asyncio.sleep(end_time-timestamp+add_sleep)
@@ -227,28 +229,47 @@ class Blum:
         return resp_json['claimBalance']
 
     async def do_tasks(self):
-        resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
+        resp = await self.session.get("https://earn-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
         resp_json = await resp.json()
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
             for catagory in resp_json:
-                if 'subSections' in catagory:
-                    for task in catagory['subSections']:
-                        if 'tasks' in task:
-                            for subtask in task['tasks']:
-                                if 'title' not in subtask or 'status' not in subtask:
-                                    continue
+                if 'title' in catagory:
+                    for task in catagory['tasks']:
+                        if 'subTasks' in task:
+                            for subtask in task['subTasks']:
                                 if subtask['title'] in continue_check:
                                     continue
                                 if subtask['status'] == "NOT_STARTED":
-                                    await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
+                                    await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
                                     logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
-                                    await asyncio.sleep(random.randint(*config.MINI_SLEEP))
                                 elif subtask['status'] == "READY_FOR_CLAIM":
-                                    answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                    answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
                                     answer = await answer.json()
                                     logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: {answer['reward']}")
-                                    await asyncio.sleep(random.randint(*config.MINI_SLEEP))
+                        else:
+                            if subtask['title'] in continue_check:
+                                continue
+                            if task['status'] == "NOT_STARTED":
+                                    await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{task['id']}/start", proxy=self.proxy)
+                                    logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {task['title']}!")
+                            elif task['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {task['title']} |  Claimed: {answer['reward']}")
+                else:
+                    for task in catagory['subSections']:
+                        for subtask in task['tasks']:
+                            if subtask['title'] in continue_check:
+                                continue
+                            if subtask['status'] == "NOT_STARTED":
+                                await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/start", proxy=self.proxy)
+                                logger.info(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | TRYING TO COMPLETE task {subtask['title']}!")
+                            elif subtask['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: {answer['reward']}")
+
                 # else:  
                 #     if task['status'] == "NOT_STARTED":
                 #         await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{task['id']}/start", proxy=self.proxy)
@@ -261,23 +282,37 @@ class Blum:
         except Exception as err:
             logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
 
-        resp = await self.session.get("https://game-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
+        resp = await self.session.get("https://earn-domain.blum.codes/api/v1/tasks", proxy=self.proxy)
         resp_json = await resp.json()
         continue_check = ["Join or create tribe", "Invite", "Farm"]
         try:
-            if 'subSections' in catagory:
-                    for task in catagory['subSections']:
-                        if 'tasks' in task:
-                            for subtask in task['tasks']:
-                                if 'title' not in subtask or 'status' not in subtask:
-                                    continue
+            for catagory in resp_json:
+                if 'title' in catagory:
+                    for task in catagory['tasks']:
+                        if 'subTasks' in catagory:
+                            for subtask in task['subTasks']:
                                 if subtask['title'] in continue_check:
                                     continue
-    
                                 if subtask['status'] == "READY_FOR_CLAIM":
-                                    answer = await self.session.post(f"https://game-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                    answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
                                     answer = await answer.json()
                                     logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
+                        else:
+                            if task['title'] in continue_check:
+                                    continue
+                            if task['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{task['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {task['title']} |  Claimed: +{answer['reward']}")
+                else:
+                    for task in catagory['subSections']:
+                        for subtask in task['tasks']:
+                            if subtask['title'] in continue_check:
+                                continue
+                            if subtask['status'] == "READY_FOR_CLAIM":
+                                answer = await self.session.post(f"https://earn-domain.blum.codes/api/v1/tasks/{subtask['id']}/claim", proxy=self.proxy)
+                                answer = await answer.json()
+                                logger.success(f"tasks | Thread {self.thread} | {self.name} | Summer Tasks | COMPLETED task {subtask['title']} |  Claimed: +{answer['reward']}")
                 
         except Exception as err:
             logger.error(f"tasks | Luồng {self.thread} | {self.name} | {err}")
@@ -300,7 +335,6 @@ class Blum:
                 resp_json = await resp.json()
                 binnace = resp_json.get("availableBalance")
                 
-                # Kiểm tra nếu binnace hợp lệ
                 if binnace is not None:
                     return binnace
             except aiohttp.ClientError as e:
@@ -308,7 +342,6 @@ class Blum:
             except Exception as e:
                 pass
 
-            # Đợi một thời gian trước khi thử lại
             await asyncio.sleep(5)  
     
     async def refresh(self):
