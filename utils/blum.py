@@ -364,6 +364,7 @@ class Blum:
             
             if await response.text() == "OK":
                 logger.success(f"game | Thread {self.thread} | {self.name} | Received DROP GAME REWARD | Received: {count}")
+                return True
             elif "Invalid jwt token" in await response.text():
                 valid = await self.is_token_valid()
                 if not valid:
