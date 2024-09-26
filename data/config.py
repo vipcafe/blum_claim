@@ -5,15 +5,13 @@ API_HASH = 'fe686be8ddfbea8901fa5c043c4045ad'
 # độ trễ giữa các lần kết nối đến tài khoản
 ACC_DELAY = [5, 10]
 
-CLAIM_TASK = True
+CLAIM_TASK = False
 
 # loại proxy
 PROXY_TYPE = "http" # http/socks5
 
 # thư mục chứa các phiên (không thay đổi)
 WORKDIR = "sessions/"
-
-CLAIM_TASK = True
 
 # sử dụng proxy
 USE_PROXY = True # True/False
